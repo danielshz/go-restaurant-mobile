@@ -35,6 +35,7 @@ interface Food {
   price: number;
   thumbnail_url: string;
   formattedPrice: string;
+  category: number;
 }
 
 interface Category {
@@ -54,27 +55,66 @@ const Dashboard: React.FC = () => {
   const navigation = useNavigation();
 
   async function handleNavigate(id: number): Promise<void> {
-    // Navigate do ProductDetails page
+    navigation.navigate('FoodDetails', { id });
   }
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
-      // Load Foods from API
+      const response = await api.get('foods');
+
+      setFoods(response.data);
     }
 
     loadFoods();
-  }, [selectedCategory, searchValue]);
+  }, []);
 
   useEffect(() => {
     async function loadCategories(): Promise<void> {
-      // Load categories from API
+      const response = await api.get('categories');
+
+      setCategories(response.data);
     }
 
     loadCategories();
   }, []);
 
-  function handleSelectCategory(id: number): void {
-    // Select / deselect category
+  useEffect(() => {
+    if (!selectedCategory) {
+      const urlRequest = searchValue
+        ? `foods?name_like=${searchValue}`
+        : 'foods';
+
+      api.get(urlRequest).then(response => setFoods(response.data));
+    } else {
+      const urlRequest = searchValue
+        ? `foods?name_like=${searchValue}&category_like=${selectedCategory}`
+        : `foods?category_like=${selectedCategory}`;
+
+      api.get(urlRequest).then(response => setFoods(response.data));
+    }
+  }, [searchValue, selectedCategory]);
+
+  async function handleSelectCategory(id: number): Promise<void> {
+    if (id === selectedCategory) {
+      setSelectedCategory(undefined);
+
+      const urlRequest = searchValue
+        ? `foods?name_like=${searchValue}`
+        : 'foods';
+
+      const response = await api.get(urlRequest);
+
+      setFoods(response.data);
+    } else {
+      const urlRequest = searchValue
+        ? `foods?name_like=${searchValue}&category_like=${id}`
+        : `foods?category_like=${id}`;
+
+      const response = await api.get(urlRequest);
+
+      setFoods(response.data);
+      setSelectedCategory(id);
+    }
   }
 
   return (
