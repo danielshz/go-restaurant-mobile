@@ -60,61 +60,43 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
-      const response = await api.get('foods');
+      const response = await api.get<Food[]>('/foods', {
+        params: {
+          name_like: searchValue,
+          category_like: selectedCategory,
+        },
+      });
 
-      setFoods(response.data);
+      const foodsWithFormattedPrice = response.data.map(food => {
+        return {
+          ...food,
+          formattedPrice: formatValue(food.price),
+        };
+      });
+
+      setFoods(foodsWithFormattedPrice);
     }
 
     loadFoods();
-  }, []);
+  }, [selectedCategory, searchValue]);
 
   useEffect(() => {
     async function loadCategories(): Promise<void> {
-      const response = await api.get('categories');
+      const { data } = await api.get<Category[]>('/categories');
 
-      setCategories(response.data);
+      setCategories(data);
     }
 
     loadCategories();
   }, []);
 
-  useEffect(() => {
-    if (!selectedCategory) {
-      const urlRequest = searchValue
-        ? `foods?name_like=${searchValue}`
-        : 'foods';
-
-      api.get(urlRequest).then(response => setFoods(response.data));
-    } else {
-      const urlRequest = searchValue
-        ? `foods?name_like=${searchValue}&category_like=${selectedCategory}`
-        : `foods?category_like=${selectedCategory}`;
-
-      api.get(urlRequest).then(response => setFoods(response.data));
-    }
-  }, [searchValue, selectedCategory]);
-
-  async function handleSelectCategory(id: number): Promise<void> {
-    if (id === selectedCategory) {
+  function handleSelectCategory(id: number): void {
+    if (selectedCategory === id) {
       setSelectedCategory(undefined);
-
-      const urlRequest = searchValue
-        ? `foods?name_like=${searchValue}`
-        : 'foods';
-
-      const response = await api.get(urlRequest);
-
-      setFoods(response.data);
-    } else {
-      const urlRequest = searchValue
-        ? `foods?name_like=${searchValue}&category_like=${id}`
-        : `foods?category_like=${id}`;
-
-      const response = await api.get(urlRequest);
-
-      setFoods(response.data);
-      setSelectedCategory(id);
+      return;
     }
+
+    setSelectedCategory(id);
   }
 
   return (
